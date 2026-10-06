@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block header %}
+  <p class="subtitle">{{ t.tagline }}</p>
+  <ul class="features">
+    <li class="f-1">{{ t.feat_noinstall }}</li>
+    <li class="f-2">{{ t.feat_offline }}</li>
+    <li class="f-3">{{ t.feat_nocloud }}</li>
+    <li class="f-4">{{ t.feat_speed }}</li>
+  </ul>
+{% endblock %}
+
+{% block content %}
+<div class="grid">
+  <section class="card connect">
+    <h2>{{ t.connect_title }}</h2>
+    {% if mobile_url %}
+      <img class="qr" src="{{ qr }}" alt="QR Code">
+      <p class="hint">{{ t.scan_hint }}</p>
+      <div class="url-box">
+        <input id="mobile-url" type="text" value="{{ mobile_url }}" readonly dir="ltr">
+        <button type="button" class="btn" onclick="copyUrl()">{{ t.copy_btn }}</button>
+      </div>
+      {% if other_ips %}
+        <p class="other-ips">
+          {{ t.other_ips }}
+          {% for x in other_ips %}
+            <a href="{{ url_for('desktop', ip=x) }}" dir="ltr">{{ x }}</a>
+          {% endfor %}
+        </p>
+      {% endif %}
+    {% else %}
+      <div class="error">{{ t.no_ip }}<br>{{ t.no_ip_hint }}</div>
+    {% endif %}
+
+    <dl class="info">
+      <dt>{{ t.server }}</dt><dd><span class="dot"></span>{{ t.running }}</dd>
+      <dt>IP</dt><dd dir="ltr">{{ ip or t.not_found }}</dd>
+      <dt>{{ t.port }}</dt><dd>{{ port }}</dd>
+    </dl>
+
+    <form class="exit" action="{{ url_for('shutdown') }}" method="post"
+          onsubmit="return confirm(T.confirm_exit)">
+      <button type="submit" class="btn btn-ghost btn-exit">{{ t.exit }}</button>
+    </form>
+  </section>
+
+  <div class="stack">
+    <section class="card">
+      <h2>{{ t.send_to_phone }}</h2>
+
+      <form class="upload" action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+        <input id="desktop-files" type="file" name="files" multiple required>
+        <button type="submit" class="btn">{{ t.upload }}</button>
+      </form>
+
+      {% if files %}
+        <ul class="files">
+          {% for f in files %}
+            <li>
+              <span class="ext ext-{{ f.kind }}">{{ f.ext }}</span>
+              <span class="name" dir="auto">{{ f.name }}</span>
+              <span class="size" dir="ltr">{{ f.size }}</span>
+              <form action="{{ url_for('delete') }}" method="post" onsubmit="return confirm(T.confirm_delete)">
+                <input type="hidden" name="folder" value="shared">
+                <input type="hidden" name="name" value="{{ f.name }}">
+                <button type="submit" class="btn btn-danger">{{ t.delete }}</button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty">{{ t.empty_shared }}</p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>{{ t.received_title }}</h2>
+        <form action="{{ url_for('open_folder') }}" method="post">
+          <button type="submit" class="btn btn-ghost">{{ t.open_folder }}</button>
+        </form>
+      </div>
+
+      {% if received %}
+        <ul class="files">
+          {% for f in received %}
+            <li>
+              <span class="ext ext-{{ f.kind }}">{{ f.ext }}</span>
+              <span class="name" dir="auto">{{ f.name }}</span>
+              <span class="size" dir="ltr">{{ f.size }}</span>
+              <a class="btn btn-ghost" href="{{ url_for('open_received', name=f.name) }}" target="_blank" rel="noopener">{{ t.open }}</a>
+              <form action="{{ url_for('delete') }}" method="post" onsubmit="return confirm(T.confirm_delete)">
+                <input type="hidden" name="folder" value="received">
+                <input type="hidden" name="name" value="{{ f.name }}">
+                <button type="submit" class="btn btn-danger">{{ t.delete }}</button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty">{{ t.empty_received }}<br>{{ t.empty_received_hint }}</p>
+      {% endif %}
+      <p class="path" dir="ltr">{{ received_dir }}</p>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function copyUrl() {
+    var input = document.getElementById('mobile-url');
+    var done = function () {
+      var btn = input.nextElementSibling;
+      btn.textContent = T.copied;
+      setTimeout(function () { btn.textContent = T.copy_btn; }, 1500);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(input.value).then(done);
+    } else {
+      input.select();
+      document.execCommand('copy');
+      done();
+    }
+  }
+
+  // هر چند ثانیه بررسی می‌کند فایل جدیدی (مثلاً از گوشی) رسیده یا نه؛ اگر بله، صفحه تازه می‌شود.
+  (function () {
+    var last = null;
+    setInterval(function () {
+      fetch('{{ url_for("state") }}').then(function (r) { return r.json(); }).then(function (s) {
+        var sig = JSON.stringify(s.sig);
+        var picking = document.getElementById('desktop-files').files.length > 0;
+        if (last !== null && sig !== last && !picking) location.reload();
+        last = sig;
+      }).catch(function () {});
+    }, 3000);
+  })();
+</script>
+{% endblock %}

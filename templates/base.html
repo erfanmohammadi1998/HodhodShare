@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ dir }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HodhodShare</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="container {% block container_class %}{% endblock %}">
+    <header class="header">
+      {% block lang_switch %}
+      <a class="lang-switch" href="{{ url_for('set_lang', code=other_lang, next=request.path) }}"
+         lang="{{ other_lang }}">🌐 {{ t.switch_label }}</a>
+      {% endblock %}
+      <h1>HodhodShare</h1>
+      {% block header %}{% endblock %}
+    </header>
+
+    {% with messages = get_flashed_messages() %}
+      {% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+  <script>var T = {{ t|tojson }};</script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

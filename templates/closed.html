@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block container_class %}narrow{% endblock %}
+
+{% block lang_switch %}{% endblock %}
+
+{% block content %}
+<section class="card closed">
+  <h2>{{ t.closed_title }}</h2>
+  <p>{{ t.closed_text }}</p>
+  <p class="hint">{{ t.closed_hint }}</p>
+</section>
+{% endblock %}
